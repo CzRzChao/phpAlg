@@ -196,7 +196,7 @@ class RBTree extends BinarySearchTree
             $this->replaceNode($target_node, $replace);
             $replace->left         = $target_node->left;
             $replace->left->parent = $replace;
-            $replace->color        = $target_node->color;
+            $replace->color        = $target_node->color;   // 将替换节点的颜色染成被删除节点
         }
         if ($del_color == RBTreeNode::BLACK) {  // 当替换的节点为黑色时，需要进行修正
             $this->_deleteFixUp($fix_node);
@@ -229,29 +229,29 @@ class RBTree extends BinarySearchTree
         while ($node !== $this->root && $node->color == RBTreeNode::BLACK) {
             if ($node == $node->parent->left) {
                 $bro = $node->parent->right;
-                if ($bro->color == RBTreeNode::RED) { // case1:兄弟节点为红色
+                if ($bro->color == RBTreeNode::RED) { // case2:兄弟节点为红色
                     $bro->color          = RBTreeNode::BLACK;
                     $node->parent->color = RBTreeNode::RED;
                     $this->leftRotate($node->parent);
                     $bro = $node->parent->right;
                 }
 
-                if ($bro->left->color == RBTreeNode::BLACK && $bro->right->color == RBTreeNode::BLACK) {    // case2:兄弟节点的孩子都是黑色
-                    $bro->color = RBTreeNode::RED;    // 将兄弟节点染成黑色
+                if ($bro->left->color == RBTreeNode::BLACK && $bro->right->color == RBTreeNode::BLACK) {    // case3:兄弟节点的孩子都是黑色
+                    $bro->color = RBTreeNode::RED;    // 将兄弟节点染成红色
                     $node       = $node->parent;  // 控制转移给父节点
                 } else {
-                    if ($bro->right->color == RBTreeNode::BLACK) { // case3:兄弟节点右孩子为黑色
+                    if ($bro->right->color == RBTreeNode::BLACK) { // case4:兄弟节点右孩子为黑色
                         $bro->left->color = RBTreeNode::BLACK;    // 染色 为右旋做准备
                         $bro->color       = RBTreeNode::RED;
                         $this->rightRotate($bro);
                         $bro = $node->parent->right;
                     }
-                    // case4:
+                    // case5:兄弟节点右孩子为红色
                     $bro->color          = $node->parent->color;
                     $node->parent->color = RBTreeNode::BLACK;
                     $bro->right->color   = RBTreeNode::BLACK;
                     $this->leftRotate($node->parent);
-                    $node = $this->root;
+                    $node = $this->root;    // 循环出口
                 }
             } else {    // 对称逻辑
                 $bro = $node->parent->left;
@@ -280,22 +280,24 @@ class RBTree extends BinarySearchTree
                 }
             }
         }
-        $node->color             = RBTreeNode::BLACK;
+        $node->color             = RBTreeNode::BLACK;   // 染黑替换节点 case1
         $this->child_nil->parent = null;    // 恢复nil节点
     }
 
     /**
      * 校验红黑树
-     * @return bool
+     * @throws Exception
      */
     public function isRBTree()
     {
         if ($this->checkNullChild($this->root)) {
-            return true;
+            echo '是红黑树:)' . PHP_EOL;
+            return;
         }
         if ($this->root->color == RBTreeNode::RED) {
-            return false;
+            throw new Exception('根节点不能为红');
         }
+        // 选最左一条路径作为黑高基准
         $root       = $this->root;
         $black_high = 0;
         while (!$this->checkNullChild($root)) {
@@ -304,7 +306,8 @@ class RBTree extends BinarySearchTree
             }
             $root = $root->left;
         }
-        return $this->_isRBTree($this->root, $black_high, 0);
+        $this->_isRBTree($this->root, $black_high, 0);
+        echo '是红黑树:)' . PHP_EOL;
     }
 
     public function _isRBTree($node, $black_high, $count)
@@ -341,9 +344,7 @@ class RBTree extends BinarySearchTree
             $this->insert($value);
             $this->preOrder($this->root);
             echo PHP_EOL;
-            if ($this->isRBTree()) {
-                echo '是红黑树:)' . PHP_EOL;
-            }
+            $this->isRBTree();
         }
         // 随机删除测试
         shuffle($mid);
@@ -351,9 +352,7 @@ class RBTree extends BinarySearchTree
             $this->delete($value);
             $this->preOrder($this->root);
             echo PHP_EOL;
-            if ($this->isRBTree()) {
-                echo '是红黑树:)' . PHP_EOL;
-            }
+            $this->isRBTree();
         }
     }
 
